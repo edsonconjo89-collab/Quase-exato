@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fb" />
+    <meta
+      name="description"
+      content="Quase Exato — não precisas de saber a resposta exata. Precisas de chegar mais perto."
+    />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <title>Quase Exato</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="#inicio" aria-label="Quase Exato — início">
+          <span class="brand-mark" aria-hidden="true">Q</span>
+          <span>Quase <strong>Exato</strong></span>
+        </a>
+        <span class="topbar-note">Desafio de estimativas</span>
+      </header>
+
+      <main id="main-content" class="main-content">
+        <section id="home-screen" class="screen screen-home" aria-labelledby="home-title">
+          <div class="hero-tag"><span class="tag-dot"></span> Pensa. Estima. Descobre.</div>
+          <h1 id="home-title">Quão perto consegues chegar?</h1>
+          <p class="hero-copy">
+            Responde a cinco perguntas, faz as tuas estimativas e tenta chegar o mais perto possível da resposta.
+          </p>
+
+          <form id="start-form" class="start-card">
+            <label for="nickname">Como queres ser chamado?</label>
+            <input
+              id="nickname"
+              name="nickname"
+              type="text"
+              minlength="2"
+              maxlength="16"
+              autocomplete="nickname"
+              placeholder="O teu nome"
+              required
+            />
+            <p id="nickname-error" class="field-error" role="alert"></p>
+            <button class="button button-primary button-full" type="submit">Jogar sozinho <span aria-hidden="true">→</span></button>
+          </form>
+
+          <div class="how-it-works">
+            <div class="how-item">
+              <span class="how-number">01</span>
+              <span><strong>Recebe a pergunta</strong><small>Uma curiosidade de cada vez.</small></span>
+            </div>
+            <div class="how-item">
+              <span class="how-number">02</span>
+              <span><strong>Faz a tua estimativa</strong><small>Tens 20 segundos para responder.</small></span>
+            </div>
+            <div class="how-item">
+              <span class="how-number">03</span>
+              <span><strong>Descobre a resposta</strong><small>Quanto mais perto, mais pontos.</small></span>
+            </div>
+          </div>
+          <p class="scope-note">Versão inicial de desenvolvimento · Modo individual</p>
+        </section>
+
+        <section id="game-screen" class="screen screen-game" aria-labelledby="question-title" hidden>
+          <div class="game-topline">
+            <button id="exit-game" class="text-button" type="button">← Sair</button>
+            <span id="round-counter" class="round-counter">PERGUNTA 1/5</span>
+          </div>
+
+          <div class="progress-track" aria-hidden="true"><div id="progress-bar" class="progress-bar"></div></div>
+
+          <article class="question-card">
+            <div class="question-meta">
+              <span id="question-category" class="category-pill">Categoria</span>
+              <span class="points-label">ATÉ 1 000 PONTOS</span>
+            </div>
+            <h1 id="question-title" class="question-title">Pergunta</h1>
+            <p id="question-unit" class="question-unit"></p>
+
+            <div class="timer-area">
+              <div class="timer-row">
+                <span>Tempo restante</span>
+                <strong id="timer-value" aria-live="off">20s</strong>
+              </div>
+              <div class="timer-track" aria-hidden="true"><div id="timer-bar" class="timer-bar"></div></div>
+            </div>
+
+            <form id="answer-form" class="answer-form">
+              <label for="estimate-input">A tua estimativa</label>
+              <div class="answer-input-row">
+                <input
+                  id="estimate-input"
+                  name="estimate"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  maxlength="18"
+                  placeholder="Ex.: 1250"
+                  aria-describedby="answer-help answer-error"
+                  required
+                />
+                <button id="submit-answer" class="button button-primary" type="submit">Confirmar</button>
+              </div>
+              <p id="answer-help" class="input-help">Podes usar vírgula ou ponto para casas decimais.</p>
+              <p id="answer-error" class="field-error" role="alert"></p>
+            </form>
+            <div id="submitted-message" class="submitted-message" role="status" hidden>
+              <span class="submitted-icon" aria-hidden="true">✓</span>
+              Estimativa enviada. Aguarda a revelação.
+            </div>
+          </article>
+          <p class="game-footnote">A resposta correta só aparece quando o tempo terminar.</p>
+        </section>
+
+        <section id="reveal-screen" class="screen screen-reveal" aria-labelledby="reveal-title" hidden>
+          <div class="reveal-header">
+            <span class="reveal-kicker">PERGUNTA <span id="reveal-round">1</span>/5</span>
+            <span class="reveal-mark" aria-hidden="true">✓</span>
+          </div>
+          <p class="reveal-question" id="reveal-question"></p>
+          <div class="answer-result-card">
+            <span class="result-label">RESPOSTA CORRETA</span>
+            <strong id="correct-answer" class="correct-answer">0</strong>
+            <span id="correct-unit" class="result-unit"></span>
+          </div>
+          <div class="score-result-grid">
+            <div class="score-result-cell">
+              <span>A tua estimativa</span>
+              <strong id="your-estimate">—</strong>
+            </div>
+            <div class="score-result-cell">
+              <span>Diferença</span>
+              <strong id="your-difference">—</strong>
+            </div>
+          </div>
+          <div class="earned-points">
+            <span>PONTOS NESTA PERGUNTA</span>
+            <strong id="earned-points">0</strong>
+          </div>
+          <p class="next-round-note" id="next-round-note">Próxima pergunta em 5 segundos…</p>
+        </section>
+
+        <section id="final-screen" class="screen screen-final" aria-labelledby="final-title" hidden>
+          <div class="final-icon" aria-hidden="true">★</div>
+          <p class="final-kicker">DESAFIO CONCLUÍDO</p>
+          <h1 id="final-title">Muito bem, <span id="final-nickname">jogador</span>!</h1>
+          <p class="final-copy">Esta é a tua pontuação nas cinco perguntas.</p>
+          <div class="final-score-card">
+            <span>PONTUAÇÃO FINAL</span>
+            <strong id="final-score">0</strong>
+            <small>de 5 000 pontos</small>
+          </div>
+          <div class="final-breakdown">
+            <h2>Resumo das respostas</h2>
+            <div id="final-results-list" class="final-results-list"></div>
+          </div>
+          <div class="final-actions">
+            <button id="play-again" class="button button-primary button-full" type="button">Jogar novamente <span aria-hidden="true">↻</span></button>
+            <button id="back-home" class="button button-secondary button-full" type="button">Voltar ao início</button>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <span>QUASE EXATO</span>
+        <span>Uma estimativa pode mudar tudo.</span>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
