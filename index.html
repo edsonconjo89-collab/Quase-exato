@@ -9,12 +9,13 @@
       content="Quase Exato — um jogo casual de estimativas. Pensa, estima, descobre."
     />
     <link rel="stylesheet" href="/src/styles.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>Quase Exato — Pensa. Estima. Descobre.</title>
   </head>
   <body>
     <div id="app">
       <header class="topbar">
-        <a class="brand" href="#inicio" aria-label="Quase Exato — início">
+        <a class="brand" href="/" aria-label="Quase Exato — início">
           <span class="brand-mark" aria-hidden="true"><span>Q</span></span>
           <span class="brand-name">quase<span>exato</span></span>
         </a>
@@ -26,7 +27,7 @@
           <div class="home-layout">
             <div class="home-copy-column">
               <div class="eyebrow"><span class="eyebrow-mark" aria-hidden="true">↗</span> Pensa. Estima. Descobre.</div>
-              <h1 id="home-title">Chega <em>perto.</em><br />Sê certeiro.</h1>
+              <h1 id="home-title" data-screen-title tabindex="-1">Chega <em>perto.</em><br />Sê certeiro.</h1>
               <p class="hero-copy">
                 Cinco perguntas. Vinte segundos. Uma oportunidade de provar que a tua intuição sabe mais do que parece.
               </p>
@@ -39,11 +40,11 @@
             <div class="home-form-column">
               <div id="auth-status" class="auth-status" data-state="loading" role="status" aria-live="polite">
                 <span class="auth-status-indicator" aria-hidden="true"></span>
-                <p id="auth-status-text">A preparar a ligação ao Supabase…</p>
+                <p id="auth-status-text">A preparar a tua entrada…</p>
                 <button id="retry-auth" class="auth-retry-button" type="button" hidden>Tentar novamente</button>
               </div>
 
-              <form id="start-form" class="start-card">
+              <form id="start-form" class="start-card" novalidate>
                 <div class="card-kicker">COMEÇA AQUI <span aria-hidden="true">01</span></div>
                 <label for="nickname">Como queres ser chamado?</label>
                 <input
@@ -91,7 +92,7 @@
               <span id="question-category" class="category-pill">Categoria</span>
               <span class="points-label">ATÉ 1 000 PONTOS</span>
             </div>
-            <h1 id="question-title" class="question-title">Pergunta</h1>
+            <h1 id="question-title" class="question-title" tabindex="-1">Pergunta</h1>
             <p id="question-unit" class="question-unit"></p>
 
             <div class="timer-area">
@@ -99,7 +100,7 @@
               <div class="timer-track" aria-hidden="true"><div id="timer-bar" class="timer-bar"></div></div>
             </div>
 
-            <form id="answer-form" class="answer-form">
+            <form id="answer-form" class="answer-form" novalidate>
               <label for="estimate-input">A tua estimativa</label>
               <div class="answer-input-row">
                 <input id="estimate-input" name="estimate" type="text" inputmode="decimal" autocomplete="off" maxlength="18" placeholder="Escreve um número" aria-describedby="answer-help answer-error" required />
@@ -113,7 +114,8 @@
           <p class="game-footnote"><span aria-hidden="true">◌</span> A resposta correta só aparece quando o tempo terminar.</p>
         </section>
 
-        <section id="reveal-screen" class="screen screen-reveal" aria-label="Revelação da resposta" hidden>
+        <section id="reveal-screen" class="screen screen-reveal" aria-labelledby="reveal-title" aria-live="polite" hidden>
+          <h1 id="reveal-title" class="visually-hidden" tabindex="-1">Revelação da resposta</h1>
           <div class="reveal-header"><span class="reveal-kicker">PERGUNTA <span id="reveal-round">1</span>/5</span><span class="reveal-mark" aria-hidden="true">✓</span></div>
           <p class="reveal-question" id="reveal-question"></p>
           <div class="answer-result-card"><span class="result-label">A RESPOSTA ERA</span><strong id="correct-answer" class="correct-answer">0</strong><span id="correct-unit" class="result-unit"></span></div>
@@ -122,16 +124,28 @@
           <p class="next-round-note" id="next-round-note">Próxima pergunta em 5 segundos…</p>
         </section>
 
-        <section id="final-screen" class="screen screen-final" aria-labelledby="final-title" hidden>
+        <section id="final-screen" class="screen screen-final" aria-labelledby="final-title" aria-live="polite" hidden>
           <div class="final-icon" aria-hidden="true">✳</div>
           <p class="final-kicker">DESAFIO CONCLUÍDO</p>
-          <h1 id="final-title">Boa, <span id="final-nickname">jogador</span>.</h1>
+          <h1 id="final-title" tabindex="-1">Boa, <span id="final-nickname">jogador</span>.</h1>
           <p class="final-copy">Este é o resultado da tua intuição em cinco perguntas.</p>
           <div class="final-score-card"><span>PONTUAÇÃO FINAL</span><strong id="final-score">0</strong><small>de 5 000 pontos</small></div>
           <div class="final-breakdown"><h2>Resumo da partida</h2><div id="final-results-list" class="final-results-list"></div></div>
           <div class="final-actions"><button id="play-again" class="button button-primary button-full" type="button">Jogar novamente <span aria-hidden="true">↻</span></button><button id="back-home" class="button button-secondary button-full" type="button">Voltar ao início</button></div>
         </section>
       </main>
+
+      <dialog id="exit-dialog" class="exit-dialog" aria-labelledby="exit-dialog-title">
+        <div class="exit-dialog-content">
+          <p class="dialog-kicker">SAIR DA PARTIDA</p>
+          <h2 id="exit-dialog-title">Queres mesmo sair?</h2>
+          <p>O progresso desta partida será perdido.</p>
+          <div class="dialog-actions">
+            <button id="cancel-exit" class="button button-secondary" type="button">Continuar</button>
+            <button id="confirm-exit" class="button button-primary" type="button">Sair da partida</button>
+          </div>
+        </div>
+      </dialog>
 
       <footer class="footer"><span>QUASE EXATO <i aria-hidden="true">✳</i></span><span>Uma estimativa pode mudar tudo.</span></footer>
     </div>

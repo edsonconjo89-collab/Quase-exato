@@ -2,7 +2,7 @@
 
 Jogo web mobile-first de estimativas numéricas. O jogador recebe cinco perguntas, dispõe de vinte segundos para estimar cada resposta e descobre a solução e a pontuação após a revelação.
 
-A interface usa HTML, CSS e JavaScript ES Modules com Vite. A identidade anónima está integrada com Supabase através do SDK oficial; o motor individual permanece local nesta fase e nenhuma lógica autoritativa de pontuação é simulada no frontend.
+A interface usa HTML, CSS e JavaScript ES Modules com Vite 7. A versão Vite 7 é mantida deliberadamente porque o Vite 8 apresentou `Illegal instruction` no ambiente de desenvolvimento utilizado, enquanto a linha 7 funciona de forma estável. A identidade anónima está integrada com Supabase através do SDK oficial; o motor individual permanece local nesta fase e nenhuma lógica autoritativa de pontuação é simulada no frontend.
 
 ## Requisitos
 
@@ -51,6 +51,8 @@ npm run preview
 A branch `feat/ui-redesign-mvp` contém o redesign visual mobile-first dos seis ecrãs previstos: início, entrada/início do modo individual, pergunta, revelação e resultados. O redesign introduz uma identidade editorial/arcade própria, tipografia com hierarquia reforçada, componentes de toque maiores, estados visuais mais claros e melhor composição em ecrãs verticais.
 
 O redesign não altera as regras de jogo, a fórmula de pontuação, os temporizadores, o fluxo individual ou a autenticação Supabase.
+
+As fontes da interface utilizam pilhas locais do sistema, sem `@import` externo, para evitar um bloqueio adicional de renderização em redes móveis lentas. Esta é uma alternativa deliberada ao alojamento WOFF2: preserva a hierarquia tipográfica através de fontes de sistema sem adicionar ficheiros ou dependências de licenciamento ao protótipo.
 
 ## Estado do projeto
 

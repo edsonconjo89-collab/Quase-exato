@@ -23,6 +23,9 @@ const elements = {
   retryAuth: document.querySelector('#retry-auth'),
   startButton: document.querySelector('#start-game'),
   exitGame: document.querySelector('#exit-game'),
+  exitDialog: document.querySelector('#exit-dialog'),
+  cancelExit: document.querySelector('#cancel-exit'),
+  confirmExit: document.querySelector('#confirm-exit'),
   roundCounter: document.querySelector('#round-counter'),
   progressBar: document.querySelector('#progress-bar'),
   questionCategory: document.querySelector('#question-category'),
@@ -35,6 +38,7 @@ const elements = {
   answerError: document.querySelector('#answer-error'),
   submitAnswer: document.querySelector('#submit-answer'),
   submittedMessage: document.querySelector('#submitted-message'),
+  revealTitle: document.querySelector('#reveal-title'),
   revealRound: document.querySelector('#reveal-round'),
   revealQuestion: document.querySelector('#reveal-question'),
   correctAnswer: document.querySelector('#correct-answer'),
@@ -43,6 +47,7 @@ const elements = {
   yourDifference: document.querySelector('#your-difference'),
   earnedPoints: document.querySelector('#earned-points'),
   nextRoundNote: document.querySelector('#next-round-note'),
+  finalTitle: document.querySelector('#final-title'),
   finalNickname: document.querySelector('#final-nickname'),
   finalScore: document.querySelector('#final-score'),
   finalResultsList: document.querySelector('#final-results-list'),
@@ -58,12 +63,20 @@ const state = {
   phase: 'home',
   estimate: null,
   answerDeadline: null,
+  revealDeadline: null,
   timerIntervalId: null,
   revealTimeoutId: null,
   authStatus: 'loading',
 };
 
-function showScreen(screenName) {
+const screenFocusTargets = {
+  home: () => elements.home.querySelector('[data-screen-title]'),
+  game: () => elements.questionTitle,
+  reveal: () => elements.revealTitle,
+  final: () => elements.finalTitle,
+};
+
+function showScreen(screenName, { focus = true } = {}) {
   const screens = {
     home: elements.home,
     game: elements.game,
@@ -73,6 +86,10 @@ function showScreen(screenName) {
 
   for (const [name, screen] of Object.entries(screens)) {
     screen.hidden = name !== screenName;
+  }
+
+  if (focus) {
+    window.requestAnimationFrame(() => screenFocusTargets[screenName]?.()?.focus());
   }
 }
 
@@ -86,7 +103,7 @@ function formatPoints(value) {
   return new Intl.NumberFormat('pt-PT').format(value);
 }
 
-function clearClocks() {
+function clearClockHandles() {
   if (state.timerIntervalId !== null) {
     window.clearInterval(state.timerIntervalId);
     state.timerIntervalId = null;
@@ -95,6 +112,39 @@ function clearClocks() {
   if (state.revealTimeoutId !== null) {
     window.clearTimeout(state.revealTimeoutId);
     state.revealTimeoutId = null;
+  }
+}
+
+function clearClocks() {
+  clearClockHandles();
+  state.answerDeadline = null;
+  state.revealDeadline = null;
+}
+
+function scheduleRevealAdvance() {
+  if (state.phase !== 'revealing' || state.revealDeadline === null) return;
+
+  const millisecondsLeft = Math.max(0, state.revealDeadline - Date.now());
+  if (millisecondsLeft === 0) {
+    advanceAfterReveal();
+    return;
+  }
+
+  state.revealTimeoutId = window.setTimeout(advanceAfterReveal, millisecondsLeft);
+}
+
+function restoreClocks() {
+  clearClockHandles();
+
+  if (state.phase === 'answering' && state.answerDeadline !== null) {
+    updateAnswerTimer();
+    if (state.phase === 'answering') {
+      state.timerIntervalId = window.setInterval(updateAnswerTimer, 100);
+    }
+  }
+
+  if (state.phase === 'revealing' && state.revealDeadline !== null) {
+    scheduleRevealAdvance();
   }
 }
 
@@ -128,9 +178,10 @@ function showQuestion() {
   state.phase = 'answering';
   state.estimate = null;
   state.answerDeadline = Date.now() + ANSWER_TIME_SECONDS * 1000;
+  state.revealDeadline = null;
 
   resetRoundInterface();
-  showScreen('game');
+  showScreen('game', { focus: false });
 
   elements.roundCounter.textContent = `PERGUNTA ${state.roundIndex + 1}/${QUESTIONS_PER_GAME}`;
   elements.progressBar.style.width = `${(state.roundIndex / QUESTIONS_PER_GAME) * 100}%`;
@@ -141,11 +192,14 @@ function showQuestion() {
   elements.timerBar.classList.remove('timer-warning');
 
   updateAnswerTimer();
-  state.timerIntervalId = window.setInterval(updateAnswerTimer, 100);
+  if (state.phase === 'answering') {
+    state.timerIntervalId = window.setInterval(updateAnswerTimer, 100);
+    window.requestAnimationFrame(() => elements.estimateInput.focus());
+  }
 }
 
 function updateAnswerTimer() {
-  if (state.phase !== 'answering') return;
+  if (state.phase !== 'answering' || state.answerDeadline === null) return;
 
   const millisecondsLeft = Math.max(0, state.answerDeadline - Date.now());
   const secondsLeft = Math.ceil(millisecondsLeft / 1000);
@@ -164,7 +218,6 @@ function submitEstimate(event) {
   event.preventDefault();
   if (state.phase !== 'answering' || state.estimate !== null) return;
 
-  // A verificação do prazo é feita novamente no momento da submissão.
   if (Date.now() >= state.answerDeadline) {
     beginReveal();
     return;
@@ -172,7 +225,7 @@ function submitEstimate(event) {
 
   const estimate = parseEstimate(elements.estimateInput.value);
   if (estimate === null) {
-    elements.answerError.textContent = 'Introduz um número válido, sem valores negativos e com até duas casas decimais.';
+    elements.answerError.textContent = 'Introdu um número sem espaços, como 300000, 300000.50 ou 300000,50.';
     elements.estimateInput.focus();
     return;
   }
@@ -188,10 +241,9 @@ function beginReveal() {
   if (state.phase !== 'answering') return;
 
   state.phase = 'revealing';
-  if (state.timerIntervalId !== null) {
-    window.clearInterval(state.timerIntervalId);
-    state.timerIntervalId = null;
-  }
+  clearClockHandles();
+  state.answerDeadline = null;
+  state.revealDeadline = Date.now() + REVEAL_TIME_SECONDS * 1000;
 
   const question = state.questions[state.roundIndex];
   const score = state.estimate === null ? 0 : calculateScore(state.estimate, question.correctAnswer);
@@ -211,8 +263,7 @@ function beginReveal() {
 
   state.results.push(result);
   renderReveal(result);
-
-  state.revealTimeoutId = window.setTimeout(advanceAfterReveal, REVEAL_TIME_SECONDS * 1000);
+  scheduleRevealAdvance();
 }
 
 function renderReveal(result) {
@@ -231,6 +282,7 @@ function renderReveal(result) {
 
 function advanceAfterReveal() {
   state.revealTimeoutId = null;
+  state.revealDeadline = null;
   if (state.phase !== 'revealing') return;
 
   state.roundIndex += 1;
@@ -300,18 +352,12 @@ async function handleStart(event) {
   try {
     await ensureAnonymousSession();
   } catch (error) {
-    console.error('Não foi possível confirmar a sessão anónima do Supabase:', error);
-    setAuthenticationStatus(
-      'error',
-      'Não foi possível autenticar. Confirma as credenciais e se as sessões anónimas estão ativadas no Supabase.',
-    );
+    console.error('Não foi possível confirmar a sessão de jogo:', error);
+    setAuthenticationStatus('error', 'Não foi possível preparar o jogo. Verifica a ligação e tenta novamente.');
     return;
   }
 
-  setAuthenticationStatus(
-    'ready',
-    'Ligação ao Supabase confirmada. A partida individual ainda funciona localmente nesta fase.',
-  );
+  setAuthenticationStatus('ready', 'Tudo pronto. Podes começar.');
   elements.startButton.disabled = false;
   state.nickname = nickname;
   startGame();
@@ -327,33 +373,34 @@ function setAuthenticationStatus(status, message) {
 
 async function initializeAnonymousAuthentication() {
   if (!isSupabaseConfigured) {
-    setAuthenticationStatus(
-      'error',
-      'Falta configurar o Supabase. Cria o ficheiro .env.local a partir de .env.example e preenche o URL e a chave pública.',
-    );
+    setAuthenticationStatus('error', 'Não foi possível preparar o jogo. Verifica a ligação e tenta novamente.');
     return;
   }
 
-  setAuthenticationStatus('loading', 'A preparar a tua identidade anónima…');
+  setAuthenticationStatus('loading', 'A preparar a tua entrada…');
 
   try {
     await ensureAnonymousSession();
-    setAuthenticationStatus(
-      'ready',
-      'Identidade anónima pronta. Não precisas de email nem palavra-passe.',
-    );
+    setAuthenticationStatus('ready', 'Tudo pronto. Podes começar.');
   } catch (error) {
-    console.error('Falha ao inicializar autenticação anónima do Supabase:', error);
-    setAuthenticationStatus(
-      'error',
-      'Não foi possível autenticar. Confirma as credenciais e se as sessões anónimas estão ativadas no Supabase.',
-    );
+    console.error('Falha ao preparar a entrada do jogador:', error);
+    setAuthenticationStatus('error', 'Não foi possível preparar o jogo. Verifica a ligação e tenta novamente.');
   }
 }
 
-function handleExit() {
-  const shouldExit = window.confirm('Queres mesmo sair desta partida? O progresso atual será perdido.');
-  if (shouldExit) returnHome();
+function openExitDialog() {
+  if (typeof elements.exitDialog.showModal === 'function') {
+    elements.exitDialog.showModal();
+  }
+}
+
+function closeExitDialog() {
+  if (elements.exitDialog.open) elements.exitDialog.close();
+}
+
+function handleExitConfirmation() {
+  closeExitDialog();
+  returnHome();
 }
 
 function handlePlayAgain() {
@@ -364,7 +411,9 @@ function initialize() {
   elements.startForm.addEventListener('submit', handleStart);
   elements.retryAuth.addEventListener('click', initializeAnonymousAuthentication);
   elements.answerForm.addEventListener('submit', submitEstimate);
-  elements.exitGame.addEventListener('click', handleExit);
+  elements.exitGame.addEventListener('click', openExitDialog);
+  elements.cancelExit.addEventListener('click', closeExitDialog);
+  elements.confirmExit.addEventListener('click', handleExitConfirmation);
   elements.playAgain.addEventListener('click', handlePlayAgain);
   elements.backHome.addEventListener('click', returnHome);
 
@@ -376,8 +425,10 @@ function initialize() {
     elements.answerError.textContent = '';
   });
 
-  // Proteção simples para não deixar temporizadores ativos ao sair da página.
-  window.addEventListener('pagehide', clearClocks);
+  window.addEventListener('pagehide', clearClockHandles);
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) restoreClocks();
+  });
 
   showScreen('home');
   initializeAnonymousAuthentication();

@@ -21,7 +21,6 @@ if (isSupabaseConfigured) {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
       },
     });
   } catch (error) {
@@ -44,4 +43,3 @@ export function getSupabaseClient() {
 
   return supabaseClient;
 }
-
