@@ -1,117 +1,66 @@
 # Quase Exato
 
-Jogo web de perguntas numéricas: estima a resposta, aproxima-te o mais possível e descobre quantos pontos conquistaste.
+Jogo web mobile-first de estimativas numéricas. O jogador recebe cinco perguntas, dispõe de vinte segundos para estimar cada resposta e descobre a solução e a pontuação após a revelação.
 
-Esta baseline corresponde à versão **v0.1.0**, um protótipo experimental do modo individual local. O código preserva a mecânica atual e serve como ponto de partida auditado para o desenvolvimento futuro do modo multiplayer.
-
-## Estado atual
-
-A versão presente inclui:
-
-- modo individual local;
-- cinco perguntas por partida;
-- seleção aleatória sem repetição dentro da partida;
-- 20 segundos para responder a cada pergunta;
-- respostas inteiras ou decimais com até duas casas;
-- ponto ou vírgula como separador decimal;
-- uma submissão por pergunta;
-- cinco segundos de revelação;
-- pontuação segundo a fórmula definida no GDD;
-- resultado final e opção de jogar novamente;
-- interface responsiva para ecrãs pequenos.
-
-Esta versão **não inclui ainda multiplayer, salas, autenticação, persistência, WebSockets ou backend**. As seis perguntas presentes são conteúdo temporário de demonstração; não substituem o banco inicial de perguntas verificadas previsto para o produto.
-
-## Tecnologias
-
-- HTML5
-- CSS nativo
-- JavaScript com ES Modules
-- Vite 8
-- Node.js Test Runner (`node:test`)
-
-A baseline não introduz frameworks de frontend nem dependências desnecessárias.
+A interface usa HTML, CSS e JavaScript ES Modules com Vite. A identidade anónima está integrada com Supabase através do SDK oficial; o motor individual permanece local nesta fase e nenhuma lógica autoritativa de pontuação é simulada no frontend.
 
 ## Requisitos
 
 - Node.js 20.19+ ou 22.12+
 - npm
-- navegador moderno
+- Navegador moderno
+- Projeto Supabase com Anonymous Sign-Ins ativado
 
 ## Instalação
-
-Na raiz do projeto:
 
 ```bash
 npm install
 ```
 
-O `package-lock.json` está incluído para reproduzir as dependências resolvidas.
+## Configuração do Supabase
 
-## Desenvolvimento local
+Copia `.env.example` para `.env.local` e preenche apenas os valores públicos do projeto:
+
+```env
+VITE_SUPABASE_URL=https://o-teu-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+A chave `service_role` nunca deve ser colocada numa variável `VITE_`, no frontend ou no GitHub. O `.env.local` está excluído pelo `.gitignore`.
+
+No painel Supabase, ativa **Authentication → Anonymous Sign-Ins**. A aplicação recupera uma sessão anónima existente ou cria uma nova antes de desbloquear o início do jogo.
+
+## Desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-Abre o endereço indicado pelo Vite, normalmente `http://localhost:5173`.
+O servidor Vite fica normalmente disponível em `http://localhost:5173`.
 
-Para permitir acesso a partir de outro dispositivo na mesma rede, o script já inicia o Vite com `--host 0.0.0.0`.
-
-## Testes
-
-Executa os testes automatizados da lógica de jogo:
+## Testes e build
 
 ```bash
 npm test
-```
-
-A baseline auditada tem 11 testes aprovados, cobrindo a fórmula de pontuação, validação de estimativas e seleção de perguntas sem repetição.
-
-## Build e preview de produção
-
-```bash
 npm run build
 npm run preview
 ```
 
-O comando `build` gera a pasta `dist/`. Os artefactos de build e as dependências instaladas são ignorados pelo Git.
+## Redesign UI/UX
 
-## Estrutura
+A branch `feat/ui-redesign-mvp` contém o redesign visual mobile-first dos seis ecrãs previstos: início, entrada/início do modo individual, pergunta, revelação e resultados. O redesign introduz uma identidade editorial/arcade própria, tipografia com hierarquia reforçada, componentes de toque maiores, estados visuais mais claros e melhor composição em ecrãs verticais.
 
-```text
-.
-├── docs/
-│   ├── AUDITORIA_INDEPENDENTE_ETAPA_1.md
-│   └── RELATORIO_TECNICO_ETAPA_1.md
-├── src/
-│   ├── data/questions.js
-│   ├── game/rules.js
-│   ├── game/rules.test.js
-│   ├── main.js
-│   └── styles.css
-├── .gitignore
-├── index.html
-├── package.json
-├── package-lock.json
-└── README.md
-```
+O redesign não altera as regras de jogo, a fórmula de pontuação, os temporizadores, o fluxo individual ou a autenticação Supabase.
 
-## Regras preservadas
+## Estado do projeto
 
-A pontuação de cada pergunta mantém a fórmula:
-
-```text
-round(1000 * max(0, 1 - abs(estimativa - resposta) / resposta))
-```
-
-A resposta correta deve ser positiva. As estimativas aceites são não negativas, com ponto ou vírgula decimal e até duas casas decimais. Uma pergunta sem resposta vale zero pontos.
-
-## Documentação
-
-- [`docs/RELATORIO_TECNICO_ETAPA_1.md`](docs/RELATORIO_TECNICO_ETAPA_1.md) — relatório técnico original do protótipo.
-- [`docs/AUDITORIA_INDEPENDENTE_ETAPA_1.md`](docs/AUDITORIA_INDEPENDENTE_ETAPA_1.md) — auditoria independente, resultados de validação, problemas e plano recomendado.
-
-## Próximas etapas
-
-O desenvolvimento multiplayer deverá ser iniciado apenas após aprovação específica da arquitetura e do plano técnico. Entre os temas previstos estão salas privadas, sincronização em tempo real, estado autoritativo no servidor, reconexão, persistência, classificação e segurança contra manipulação de resultados.
+- [x] Vite e JavaScript modular
+- [x] Supabase Anonymous Auth integrado
+- [x] Sessão anónima recuperada ou criada automaticamente
+- [x] Motor individual local com cinco perguntas e revelação
+- [x] Redesign visual mobile-first
+- [x] Testes automatizados das regras
+- [ ] Persistência server-side da partida
+- [ ] Salas multiplayer privadas
+- [ ] Realtime e cálculo autoritativo no backend
+- [ ] Deploy de produção

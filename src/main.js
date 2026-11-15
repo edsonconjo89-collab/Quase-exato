@@ -1,4 +1,6 @@
 import { QUESTIONS } from './data/questions.js';
+import { ensureAnonymousSession } from './auth/anonymous-auth.js';
+import { isSupabaseConfigured } from './lib/supabase.js';
 import {
   ANSWER_TIME_SECONDS,
   QUESTIONS_PER_GAME,
@@ -16,6 +18,10 @@ const elements = {
   startForm: document.querySelector('#start-form'),
   nickname: document.querySelector('#nickname'),
   nicknameError: document.querySelector('#nickname-error'),
+  authStatus: document.querySelector('#auth-status'),
+  authStatusText: document.querySelector('#auth-status-text'),
+  retryAuth: document.querySelector('#retry-auth'),
+  startButton: document.querySelector('#start-game'),
   exitGame: document.querySelector('#exit-game'),
   roundCounter: document.querySelector('#round-counter'),
   progressBar: document.querySelector('#progress-bar'),
@@ -54,6 +60,7 @@ const state = {
   answerDeadline: null,
   timerIntervalId: null,
   revealTimeoutId: null,
+  authStatus: 'loading',
 };
 
 function showScreen(screenName) {
@@ -277,7 +284,7 @@ function returnHome() {
   showScreen('home');
 }
 
-function handleStart(event) {
+async function handleStart(event) {
   event.preventDefault();
   const nickname = validateNickname(elements.nickname.value);
 
@@ -288,8 +295,60 @@ function handleStart(event) {
   }
 
   elements.nicknameError.textContent = '';
+  elements.startButton.disabled = true;
+
+  try {
+    await ensureAnonymousSession();
+  } catch (error) {
+    console.error('Não foi possível confirmar a sessão anónima do Supabase:', error);
+    setAuthenticationStatus(
+      'error',
+      'Não foi possível autenticar. Confirma as credenciais e se as sessões anónimas estão ativadas no Supabase.',
+    );
+    return;
+  }
+
+  setAuthenticationStatus(
+    'ready',
+    'Ligação ao Supabase confirmada. A partida individual ainda funciona localmente nesta fase.',
+  );
+  elements.startButton.disabled = false;
   state.nickname = nickname;
   startGame();
+}
+
+function setAuthenticationStatus(status, message) {
+  state.authStatus = status;
+  elements.authStatus.dataset.state = status;
+  elements.authStatusText.textContent = message;
+  elements.retryAuth.hidden = status !== 'error';
+  elements.startButton.disabled = status !== 'ready';
+}
+
+async function initializeAnonymousAuthentication() {
+  if (!isSupabaseConfigured) {
+    setAuthenticationStatus(
+      'error',
+      'Falta configurar o Supabase. Cria o ficheiro .env.local a partir de .env.example e preenche o URL e a chave pública.',
+    );
+    return;
+  }
+
+  setAuthenticationStatus('loading', 'A preparar a tua identidade anónima…');
+
+  try {
+    await ensureAnonymousSession();
+    setAuthenticationStatus(
+      'ready',
+      'Identidade anónima pronta. Não precisas de email nem palavra-passe.',
+    );
+  } catch (error) {
+    console.error('Falha ao inicializar autenticação anónima do Supabase:', error);
+    setAuthenticationStatus(
+      'error',
+      'Não foi possível autenticar. Confirma as credenciais e se as sessões anónimas estão ativadas no Supabase.',
+    );
+  }
 }
 
 function handleExit() {
@@ -303,6 +362,7 @@ function handlePlayAgain() {
 
 function initialize() {
   elements.startForm.addEventListener('submit', handleStart);
+  elements.retryAuth.addEventListener('click', initializeAnonymousAuthentication);
   elements.answerForm.addEventListener('submit', submitEstimate);
   elements.exitGame.addEventListener('click', handleExit);
   elements.playAgain.addEventListener('click', handlePlayAgain);
@@ -320,6 +380,7 @@ function initialize() {
   window.addEventListener('pagehide', clearClocks);
 
   showScreen('home');
+  initializeAnonymousAuthentication();
 }
 
 initialize();
