@@ -64,7 +64,7 @@ A implementação foi iniciada apenas depois de confirmar que a branch estava li
 ### A7 — Foco e acessibilidade
 
 - **Problema original:** mudança de ecrã sem gestão de foco, revelação/resultados sem anúncio adequado e indicadores de foco insuficientes.
-- **Correcção:** `showScreen()` foca o título do novo ecrã; perguntas focam o campo de estimativa; revelação e resultados têm regiões `aria-live`; títulos de ecrã têm destinos de foco; botões, links e inputs têm `:focus-visible`; o diálogo de saída é não bloqueante e acessível.
+- **Correcção:** `showScreen()` foca o título do novo ecrã; cada pergunta foca o respectivo título, evitando abrir o teclado virtual em mobile; revelação e resultados têm regiões `aria-live`; títulos de ecrã têm destinos de foco; botões, links e inputs têm `:focus-visible`; o diálogo de saída é não bloqueante e acessível.
 - **Ficheiros:** `index.html`, `src/main.js`, `src/styles.css`.
 - **Estado:** **CORRIGIDO**.
 - **Evidência:** inspecção de sintaxe e markup concluída; os títulos possuem `tabindex="-1"`, os formulários têm mensagens associadas e os estados de revelação/final têm `aria-live="polite"`.
@@ -125,3 +125,20 @@ Não foram produzidas capturas de pergunta, revelação, resultados ou pergunta 
 ## F. Declaração final
 
 A branch está pronta para uma segunda auditoria independente das correcções implementadas, com a ressalva de que a autenticação Supabase e o fluxo completo de partida ainda precisam de validação num ambiente configurado. Não houve merge, deploy, migrations ou alterações à branch `main`.
+
+## Addendum — Directiva 04
+
+Esta revisão partiu do commit `7bcb17d75409558394e51444c20ce13c991685d4`, permaneceu na branch `feat/ui-redesign-mvp` e não alterou `main`.
+
+1. **Indicadores de pergunta — CORRIGIDO.** O espaçamento de `.game-topline` e `.reveal-header` foi reduzido de 14/12 px para 8 px, mantendo o contador sem espaços indevidos e permitindo verificar o layout a 320, 360 e 390 px.
+2. **Contraste de foco e placeholder — CORRIGIDO.** O contorno coral foi substituído por indicador escuro/duplo: tinta sobre papel 16,26:1, tinta sobre fundo quente 15,43:1, branco sobre violeta 5,37:1 e violeta escuro no campo branco 7,19:1. O placeholder usa `--muted`: 6,17:1 sobre branco e 5,90:1 sobre o fundo de input quente.
+3. **Anúncio da pergunta — CORRIGIDO.** O título da pergunta tem `tabindex="-1"` e `aria-live="polite"`; cada nova pergunta foca o título, não o campo, evitando abrir automaticamente o teclado virtual em mobile.
+4. **Logótipo durante a partida — CORRIGIDO.** O clique é interceptado: durante resposta/revelação abre o diálogo existente; fora de uma partida regressa ao início sem recarregar a página.
+5. **Validação e mensagens — CORRIGIDO.** A mensagem usa “Introduz” e distingue campo vazio, negativos, notação científica, caracteres não numéricos, espaços/separadores de milhares e formato decimal inválido. As regras de `parseEstimate` não foram alteradas.
+6. **Configuração Supabase — CORRIGIDO.** `detectSessionInUrl: false` está definido explicitamente; `persistSession` e autenticação anónima permanecem activos.
+7. **Logs de produção — CORRIGIDO para o código da aplicação.** Os detalhes de erros de autenticação só são enviados para `console.error` quando `import.meta.env.DEV` é verdadeiro; o build de produção não contém os logs específicos da aplicação. A ausência de configuração apresenta uma mensagem distinta, sem atribuí-la à ligação de Internet. O bundle continua a conter alguns `console.error` internos da dependência Supabase, que não foram alterados para não modificar a biblioteca nem a arquitectura aprovada.
+8. **Foco do diálogo — CORRIGIDO.** O cancelamento restaura o foco de forma dependente do estado actual: revelação, pergunta, resultado ou início. Os prazos continuam absolutos e não são pausados.
+9. **Responsividade a 320 px — CORRIGIDO.** A grelha da revelação usa colunas `minmax(0, 1fr)`, células com `min-width: 0`, quebra segura de conteúdo e ajuste moderado de padding/tamanho em ecrãs até 360 px; o conteúdo não é ocultado.
+10. **Documentação — CORRIGIDO.** Este addendum regista o estado real. Continua pendente apenas a validação autenticada completa, porque este ambiente não possui configuração Supabase; não foram fabricados estados de jogo.
+
+A validação de ecrãs autenticados, foco em Android real e leitores de ecrã completos permanece uma pendência de ambiente, não uma alteração simulada nesta revisão.

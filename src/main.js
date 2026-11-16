@@ -11,6 +11,7 @@ import {
 } from './game/rules.js';
 
 const elements = {
+  brand: document.querySelector('.brand'),
   home: document.querySelector('#home-screen'),
   game: document.querySelector('#game-screen'),
   reveal: document.querySelector('#reveal-screen'),
@@ -194,7 +195,7 @@ function showQuestion() {
   updateAnswerTimer();
   if (state.phase === 'answering') {
     state.timerIntervalId = window.setInterval(updateAnswerTimer, 100);
-    window.requestAnimationFrame(() => elements.estimateInput.focus());
+    window.requestAnimationFrame(() => elements.questionTitle.focus());
   }
 }
 
@@ -223,9 +224,10 @@ function submitEstimate(event) {
     return;
   }
 
-  const estimate = parseEstimate(elements.estimateInput.value);
+  const rawEstimate = elements.estimateInput.value.trim();
+  const estimate = parseEstimate(rawEstimate);
   if (estimate === null) {
-    elements.answerError.textContent = 'Introdu um número sem espaços, como 300000, 300000.50 ou 300000,50.';
+    elements.answerError.textContent = getEstimateError(rawEstimate);
     elements.estimateInput.focus();
     return;
   }
@@ -235,6 +237,15 @@ function submitEstimate(event) {
   elements.submitAnswer.disabled = true;
   elements.submittedMessage.hidden = false;
   elements.answerError.textContent = '';
+}
+
+function getEstimateError(value) {
+  if (!value) return 'Introduz uma estimativa para continuar.';
+  if (/^-/.test(value)) return 'A estimativa não pode ser negativa.';
+  if (/[eE]/.test(value)) return 'Não uses notação científica. Introduz um número inteiro ou decimal.';
+  if (/\s/.test(value)) return 'Não uses espaços ou separadores de milhares na estimativa.';
+  if (/[^\d.,]/.test(value)) return 'Introduz apenas números, com ponto ou vírgula decimal.';
+  return 'Formato numérico inválido. Usa até duas casas decimais, como 300000,50.';
 }
 
 function beginReveal() {
@@ -352,7 +363,7 @@ async function handleStart(event) {
   try {
     await ensureAnonymousSession();
   } catch (error) {
-    console.error('Não foi possível confirmar a sessão de jogo:', error);
+    logAuthenticationError('Não foi possível confirmar a sessão de jogo.', error);
     setAuthenticationStatus('error', 'Não foi possível preparar o jogo. Verifica a ligação e tenta novamente.');
     return;
   }
@@ -373,7 +384,7 @@ function setAuthenticationStatus(status, message) {
 
 async function initializeAnonymousAuthentication() {
   if (!isSupabaseConfigured) {
-    setAuthenticationStatus('error', 'Não foi possível preparar o jogo. Verifica a ligação e tenta novamente.');
+    setAuthenticationStatus('error', 'O jogo não está configurado neste ambiente. Tenta novamente mais tarde.');
     return;
   }
 
@@ -383,23 +394,50 @@ async function initializeAnonymousAuthentication() {
     await ensureAnonymousSession();
     setAuthenticationStatus('ready', 'Tudo pronto. Podes começar.');
   } catch (error) {
-    console.error('Falha ao preparar a entrada do jogador:', error);
+    logAuthenticationError('Falha ao preparar a entrada do jogador.', error);
     setAuthenticationStatus('error', 'Não foi possível preparar o jogo. Verifica a ligação e tenta novamente.');
   }
 }
 
+function logAuthenticationError(message, error) {
+  if (import.meta.env.DEV) console.error(message, error);
+}
+
 function openExitDialog() {
   if (typeof elements.exitDialog.showModal === 'function') {
+    elements.exitDialog.dataset.returnFocus = document.activeElement?.id ?? '';
     elements.exitDialog.showModal();
   }
 }
 
-function closeExitDialog() {
+function restoreExitFocus() {
+  if (state.phase === 'revealing') {
+    elements.revealTitle.focus();
+  } else if (state.phase === 'answering') {
+    elements.questionTitle.focus();
+  } else if (state.phase === 'finished') {
+    elements.finalTitle.focus();
+  } else {
+    elements.home.querySelector('[data-screen-title]')?.focus();
+  }
+}
+
+function closeExitDialog({ restoreFocus = true } = {}) {
   if (elements.exitDialog.open) elements.exitDialog.close();
+  if (restoreFocus) window.requestAnimationFrame(restoreExitFocus);
 }
 
 function handleExitConfirmation() {
-  closeExitDialog();
+  closeExitDialog({ restoreFocus: false });
+  returnHome();
+}
+
+function handleBrandClick(event) {
+  event.preventDefault();
+  if (state.phase === 'answering' || state.phase === 'revealing') {
+    openExitDialog();
+    return;
+  }
   returnHome();
 }
 
@@ -408,11 +446,16 @@ function handlePlayAgain() {
 }
 
 function initialize() {
+  elements.brand.addEventListener('click', handleBrandClick);
   elements.startForm.addEventListener('submit', handleStart);
   elements.retryAuth.addEventListener('click', initializeAnonymousAuthentication);
   elements.answerForm.addEventListener('submit', submitEstimate);
   elements.exitGame.addEventListener('click', openExitDialog);
   elements.cancelExit.addEventListener('click', closeExitDialog);
+  elements.exitDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeExitDialog();
+  });
   elements.confirmExit.addEventListener('click', handleExitConfirmation);
   elements.playAgain.addEventListener('click', handlePlayAgain);
   elements.backHome.addEventListener('click', returnHome);

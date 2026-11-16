@@ -21,6 +21,7 @@ if (isSupabaseConfigured) {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
+        detectSessionInUrl: false,
       },
     });
   } catch (error) {
